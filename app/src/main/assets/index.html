@@ -26,7 +26,7 @@ h1{font-size:clamp(23px,4vw,34px);margin:0}.subtitle{color:var(--muted);margin-t
 .settings{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px}.toggle{background:white;border-radius:13px;padding:10px 13px;display:flex;gap:8px;align-items:center;font-size:14px}
 .panel{display:none;background:white;border-radius:24px;padding:clamp(16px,4vw,28px);margin-top:20px;box-shadow:0 8px 25px #28345c12}.panel.show{display:block}
 .quiztop{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}.progress{height:10px;background:#edf0fa;border-radius:20px;overflow:hidden;margin:17px 0}.bar{height:100%;width:0;background:linear-gradient(90deg,#5b5ce2,#9a7cf5);transition:width .3s}
-.question{text-align:center;padding:15px 0 20px}.question .qemoji{font-size:48px}.question h2{font-size:clamp(25px,5vw,38px);margin:10px 0}.speak{background:#eef0ff;color:#5558d8;border-radius:50%;width:42px;height:42px;font-size:20px;vertical-align:middle;margin-right:8px}
+.question{text-align:center;padding:15px 0 20px}.question .qemoji{font-size:48px}.question h2{font-size:clamp(25px,5vw,38px);margin:10px 0}.speak{background:#eef0ff;color:#5558d8;border-radius:50%;width:42px;height:42px;font-size:20px;vertical-align:middle;margin-right:8px}.animalSound{display:none;background:#fff1d6;color:#805000;border:2px solid #ffd27a;border-radius:14px;padding:11px 18px;font-weight:bold;margin:10px auto 0}.animalSound.show{display:block}
 .answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.answer{padding:16px 10px;border:2px solid #e8eaf5;border-radius:15px;background:#fafbff;font-size:20px;font-weight:bold;color:var(--ink);min-height:60px}.answer:hover{border-color:#a6a5f5;background:#f3f2ff}.answer.correct{background:#e5f8ee;border-color:var(--good);color:#147a4b}.answer.wrong{background:#fff0f0;border-color:var(--bad);color:#b52e3d}
 .feedback{text-align:center;min-height:35px;font-weight:bold;margin:15px 0 5px}.quizactions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:15px}
 .result{text-align:center;padding:15px}.result .big{font-size:70px}.result h2{font-size:28px}.result p{color:var(--muted);line-height:1.8}
@@ -69,7 +69,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:25px 0 10px}
 <section class="panel" id="quiz">
  <div class="quiztop"><strong id="gameName">اللعبة</strong><strong>السؤال <span id="questionNo">1</span> من 10</strong></div>
  <div class="progress"><div class="bar" id="progressBar"></div></div>
- <div class="question"><div class="qemoji" id="qEmoji">❓</div><h2><span id="questionText">السؤال</span><button class="speak" id="speakBtn" title="اسمع السؤال">🔊</button></h2></div>
+ <div class="question"><div class="qemoji" id="qEmoji">❓</div><h2><span id="questionText">السؤال</span><button class="speak" id="speakBtn" title="اسمع السؤال">🔊</button></h2><button class="animalSound" id="animalSoundBtn">🐾 اسمع صوت الحيوان</button></div>
  <div class="answers" id="answers"></div>
  <div class="feedback" id="feedback" aria-live="polite"></div>
  <div class="quizactions"><button class="primary" id="nextBtn" disabled>السؤال التالي ←</button><button class="secondary" id="homeBtn">العودة للأقسام</button></div>
@@ -87,8 +87,19 @@ let level='easy', currentGame='math', questions=[], index=0, score=0, answered=f
 let total=Number(localStorage.getItem('abtal_total')||0), best=Number(localStorage.getItem('abtal_best')||0);
 const names={math:'جدول الضرب',colors:'عالم الألوان',animals:'مملكة الحيوانات',shapes:'الأشكال الهندسية',mix:'التحدي الشامل'};
 const animals=[
- ['🐱','القطة','مياو'],['🐶','الكلب','هوهو'],['🐄','البقرة','خوار'],['🐑','الخروف','مأمأ'],['🦁','الأسد','زئير'],['🐴','الحصان','صهيل'],['🦆','البطة','بطبط'],['🐓','الديك','صياح']
+ ['🐱','القطة','مياو','cat-meow'],['🐶','الكلب','هوهو','dog-bark'],['🐄','البقرة','خوار','cow-moo'],['🐑','الخروف','مأمأ','sheep-bleat'],['🦁','الأسد','زئير','lion-roar'],['🐴','الحصان','صهيل','horse-neigh'],['🦆','البطة','بطبط','duck-quack'],['🐓','الديك','صياح','rooster-crow']
 ];
+const animalAudio={
+ 'cat-meow':'https://sfxmint.com/dl/animal-cat-meow-34.mp3',
+ 'dog-bark':'https://sfxmint.com/dl/animal-dog-bark-25.mp3',
+ 'cow-moo':'https://sfxmint.com/dl/cow-moo-02.mp3',
+ 'sheep-bleat':'https://sfxmint.com/dl/sheep-bleat-02.mp3',
+ 'lion-roar':'https://sfxmint.com/dl/lion-roar-02.mp3',
+ 'horse-neigh':'https://sfxmint.com/dl/horse-neigh-03.mp3',
+ 'duck-quack':'https://sfxmint.com/dl/duck-quack-02.mp3',
+ 'rooster-crow':'https://sfxmint.com/dl/rooster-crow-02.mp3'
+};
+let animalPlayer=null;
 const colors=[['🔴','أحمر'],['🔵','أزرق'],['🟢','أخضر'],['🟡','أصفر'],['🟣','بنفسجي'],['🟠','برتقالي'],['⚫','أسود'],['⚪','أبيض'],['🟤','بني'],['🩷','وردي']];
 const shapes=[['🔺','مثلث'],['🟦','مربع'],['🔵','دائرة'],['▭','مستطيل'],['⭐','نجمة'],['❤️','قلب'],['⬡','سداسي'],['🥚','بيضاوي']];
 const rand=a=>a[Math.floor(Math.random()*a.length)];
@@ -103,8 +114,8 @@ function buildMath(){
 function buildList(kind,data){
  return Array.from({length:10},()=>{
   let item=rand(data),ask=kind==='colors'?'ما اسم اللون ده؟':kind==='animals'?'ما اسم الحيوان ده؟':'ما اسم الشكل ده؟';
-  if(kind==='animals'&&Math.random()>.5){ask=`ما صوت ${item[1]}؟`;return makeQuestion(ask,item[0],item[2],data.map(x=>x[2]))}
-  return makeQuestion(ask,item[0],item[1],data.map(x=>x[1]));
+  if(kind==='animals'&&Math.random()>.5){ask=`ما صوت ${item[1]}؟`;let q=makeQuestion(ask,item[0],item[2],data.map(x=>x[2]));q.animalSound=item[3];q.animalName=item[1];return q}
+  let q=makeQuestion(ask,item[0],item[1],data.map(x=>x[1]));if(kind==='animals'){q.animalSound=item[3];q.animalName=item[1]}return q;
  });
 }
 function start(game){
@@ -114,7 +125,7 @@ function start(game){
 }
 function render(){
  const q=questions[index];answered=false;$('questionNo').textContent=index+1;$('progressBar').style.width=(index/10*100)+'%';$('qEmoji').textContent=q.emoji;$('questionText').textContent=q.text;$('feedback').textContent='';$('nextBtn').disabled=true;$('nextBtn').textContent=index===9?'اعرض النتيجة 🏆':'السؤال التالي ←';
- $('answers').innerHTML='';q.answers.forEach(ans=>{let b=document.createElement('button');b.className='answer';b.textContent=ans;b.addEventListener('click',()=>choose(b,ans));$('answers').appendChild(b)});
+ $('animalSoundBtn').classList.toggle('show',!!q.animalSound);$('answers').innerHTML='';q.answers.forEach(ans=>{let b=document.createElement('button');b.className='answer';b.textContent=ans;b.addEventListener('click',()=>choose(b,ans));$('answers').appendChild(b)});
  if($('soundToggle').checked)speak(q.text);
 }
 function choose(button,answer){
@@ -132,12 +143,13 @@ function finish(){
  $('resultText').textContent=`جمعت ${score} نقطة من أصل ${level==='easy'?100:level==='medium'?150:200} نقطة في ${names[currentGame]}. استمر في التدريب وهتوصل للأفضل!`;$('result').scrollIntoView({behavior:'smooth'});
 }
 function updateStats(){$('totalScore').textContent=total;$('bestScore').textContent=best}
+function playAnimalSound(){let q=questions[index];if(!q?.animalSound)return;try{if(animalPlayer){animalPlayer.pause();animalPlayer.currentTime=0}animalPlayer=new Audio(animalAudio[q.animalSound]);animalPlayer.volume=.9;animalPlayer.play().catch(()=>speak(`صوت ${q.animalName} ${animals.find(a=>a[1]===q.animalName)?.[2]||''}`))}catch(e){speak(`صوت ${q.animalName}`)}}
 function speak(text){if(!('speechSynthesis'in window))return;window.speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(text);u.lang='ar-EG';u.rate=.85;window.speechSynthesis.speak(u)}
 function beep(freq){try{let c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=freq;g.gain.value=.07;o.start();o.stop(c.currentTime+.12)}catch(e){}}
 function home(){$('quiz').classList.remove('show');$('result').classList.remove('show');window.scrollTo({top:0,behavior:'smooth'})}
 document.querySelectorAll('.game').forEach(b=>b.addEventListener('click',()=>start(b.dataset.game)));
 document.querySelectorAll('.level').forEach(b=>b.addEventListener('click',()=>{level=b.dataset.level;document.querySelectorAll('.level').forEach(x=>x.classList.toggle('active',x===b))}));
-$('nextBtn').addEventListener('click',next);$('homeBtn').addEventListener('click',home);$('resultHomeBtn').addEventListener('click',home);$('againBtn').addEventListener('click',()=>start(lastGame));$('speakBtn').addEventListener('click',()=>speak(questions[index]?.text||''));$('resetBtn').addEventListener('click',()=>{if(confirm('متأكد إنك عايز تصفر مجموع النقاط وأفضل نتيجة؟')){total=0;best=0;localStorage.removeItem('abtal_total');localStorage.removeItem('abtal_best');updateStats()}});
+$('nextBtn').addEventListener('click',next);$('homeBtn').addEventListener('click',home);$('resultHomeBtn').addEventListener('click',home);$('againBtn').addEventListener('click',()=>start(lastGame));$('speakBtn').addEventListener('click',()=>speak(questions[index]?.text||''));$('animalSoundBtn').addEventListener('click',playAnimalSound);$('resetBtn').addEventListener('click',()=>{if(confirm('متأكد إنك عايز تصفر مجموع النقاط وأفضل نتيجة؟')){total=0;best=0;localStorage.removeItem('abtal_total');localStorage.removeItem('abtal_best');updateStats()}});
 updateStats();
 })();
 </script>
